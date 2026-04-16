@@ -17,9 +17,10 @@ public class ATMSystem {
         do {
             System.out.println("\n--- ATM Menu ---");
             System.out.println("1. Check Balance");
-            System.out.println("2. Withdraw");
-            System.out.println("3. Change PIN");
-            System.out.print("Choose option: ");
+             System.out.println("2. Deposit");
+            System.out.println("3. Withdraw");
+            System.out.println("4. Change PIN");
+                       System.out.print("Choose option: ");
             int choice = sc.nextInt();
             sc.nextLine(); // Consume newline
 
@@ -31,11 +32,14 @@ public class ATMSystem {
                     case 1:
                         checkBalance(debitCardNo);
                         break;
-                    case 2:
+                    case 3:
                         withdraw(debitCardNo, sc);
                         break;
-                    case 3:
+                    case 4:
                         changePin(debitCardNo, sc);
+                        break;
+                    case 2:
+                        deposit(debitCardNo, sc);
                         break;
                     default:
                         System.out.println("Invalid option selected.");
@@ -109,6 +113,39 @@ public class ATMSystem {
                     System.out.println("Withdrawal successful. New balance: ₹" + newBalance);
                 } else {
                     System.out.println("Insufficient balance or invalid amount.");
+                }
+            } else {
+                System.out.println("Account not found.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    static void deposit(String card, Scanner sc) {
+        try (Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS)) {
+            String sql = "SELECT balance FROM users WHERE debit_card_no = ?";
+            PreparedStatement pst = con.prepareStatement(sql);
+            pst.setString(1, card);
+            ResultSet rs = pst.executeQuery();
+
+            if (rs.next()) {
+                double balance = rs.getDouble("balance");
+                System.out.print("Enter amount to deposit: ₹");
+                double amount = sc.nextDouble();
+                sc.nextLine(); // consume newline
+
+                if (amount > 0) {
+                    double newBalance = balance + amount;
+                    PreparedStatement updatePst = con.prepareStatement(
+                        "UPDATE users SET balance = ? WHERE debit_card_no = ?"
+                    );
+                    updatePst.setDouble(1, newBalance);
+                    updatePst.setString(2, card);
+                    updatePst.executeUpdate();
+                    System.out.println("Deposit successful. New balance: ₹" + newBalance);
+                } else {
+                    System.out.println("Invalid deposit amount.");
                 }
             } else {
                 System.out.println("Account not found.");
